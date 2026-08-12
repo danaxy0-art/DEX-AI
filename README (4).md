@@ -1,99 +1,355 @@
-# DEX — Enterprise AI Consulting & Decision Support
+DEX — Multi-Agent Enterprise AI Consultant
 
-**DEX** is a multi-agent enterprise AI consultant built as a capstone project for the SDAIA Academy training programme. Instead of a single AI model giving a generic answer, DEX acts like a full consulting team: a company describes a project or problem, and a set of specialist agents analyze it from their own domain before a supervisor agent synthesizes a unified, risk-aware feasibility report.
+DEX is a multi-agent enterprise AI consulting and decision-support system developed as a capstone project for the SDAIA Academy training programme.
 
-## Team
+Instead of relying on a single AI model to produce a generic answer, DEX operates like a specialized consulting team. A company submits a project, challenge, or proposed AI initiative. DEX structures the case, dynamically selects the relevant specialist agents, retrieves supporting domain knowledge, and produces a unified, risk-aware feasibility report.
 
-- Dana Alsaidan
-- Waad Alsaif
-- Deema Alaowairdhi
-- Reema Alsahli
-- Majdoleen Alhamdan
+Team
 
-## The Idea
+• Dana Alsaidan
+• Waad Alsaif
+• Deema Alaowairdhi
+• Reema Alsahli
+• Majdoleen Alhamdan
 
-A company submits an "Enterprise Case" — either as structured fields (company, project, problem, requirements, budget, expected users) or as a natural-language description. DEX extracts the relevant information and routes it to the specialists needed to answer it, rather than always invoking every agent.
+Declared Capstone Track
 
-**Example input:**
+Track C — Router Across Sources
 
-> "Our company wants to build an AI-powered customer service platform for 100,000 users. It should support Arabic and English, connect to our CRM, use internal documents for answers, and escalate complex cases to human employees. Our budget is 500,000 SAR. Analyze whether this project is technically and financially feasible."
+DEX follows Track C by using a Router Agent as a classifier. The Router analyzes each Enterprise Case and dynamically selects the most relevant specialist agents and their corresponding domain-specific RAG knowledge bases. Each request is therefore routed only to the sources that materially contribute to the analysis instead of being sent to every available specialist.
 
-**Example output:** an Enterprise AI Feasibility Report covering executive summary, technical feasibility, architecture, infrastructure, business integration, risk assessment, cost estimate, and a scored decision (Recommended / Recommended with Conditions / Not Recommended).
+Project Idea
 
-## Architecture
+A company submits an Enterprise Case using structured fields or a natural-language description. The case may include the company, industry, project, business problem, requirements, budget, expected users, and additional context.
 
+DEX first structures the information. A Router Agent then determines which specialists are required instead of invoking every available agent. Each selected specialist evaluates the project from a different perspective. The Supervisor Agent combines their findings into a unified feasibility report containing technical recommendations, business considerations, infrastructure requirements, risks, implementation conditions, and a final scored decision.
+
+Example Input
+
+> Our company wants to build an AI-powered customer service platform for 100,000 users. It should support Arabic and English, connect to our CRM, use internal documents to answer customer questions, and escalate complex cases to human employees. Our budget is 500,000 SAR. Analyze whether this project is technically, operationally, and financially feasible.
+
+Example Output
+
+DEX generates an Enterprise AI Feasibility Report covering:
+
+• Executive summary
+• Project understanding
+• Selected specialist findings
+• Technical feasibility
+• AI and software architecture
+• IT infrastructure
+• Business integration
+• Risk assessment
+• Key implementation conditions
+• Recommended architecture
+• Implementation roadmap
+• Overall feasibility score
+• Final decision
+
+The final decision is classified as Recommended, Recommended with Conditions, Requires Major Revision, or Not Recommended.
+
+Architecture
+
+```mermaid
+flowchart TD
+    A[Enterprise Case] --> B[Intake Agent]
+    B --> C[Router Agent]
+    C --> D[Selected Specialist Agents]
+    D --> E[Supervisor Agent]
+    E --> F[Scoring and Decision]
+    F --> G{Human Approval}
+    G -->|Approved| H[Final Report]
+    G -->|Revision requested| E
 ```
-                    USER
-                      │
-                      ▼
-              ┌───────────────┐
-              │ Intake Agent  │
-              └───────┬───────┘
-                      │
-                      ▼
-              ┌───────────────┐
-              │ Router Agent  │
-              └───────┬───────┘
-                      │
-          ┌───────────┼───────────┐
-          ▼           ▼           ▼
-     Specialists   Specialists   Specialists
-          │           │           │
-          └───────────┼───────────┘
-                      ▼
-              ┌───────────────┐
-              │  Supervisor   │
-              └───────┬───────┘
-                      │
-                      ▼
-               Risk / Quality
-                      │
-                      ▼
-                Human Review
-                      │
-                      ▼
-                Final Report
+
+Workflow Patterns
+
+DEX combines four workflow and agent patterns:
+
+Prompt Chaining
+
+```text
+Intake → Routing → Specialist Consultation → Supervisor → Human Approval → Final Report
 ```
 
-## Specialist Agents
+Each stage receives the state produced by the previous stage.
 
-| Agent | Real Role |
-|---|---|
-| **AI Agent** | Model choice, RAG needs, fine-tuning, hallucination handling, guardrails, evaluation |
-| **Software Engineering Agent** | Architecture, APIs, testing, maintainability, scalability, SDLC |
-| **Computer Science Agent** | Algorithms, retrieval, ranking, optimization, model evaluation |
-| **IT Agent** | Cloud, networking, deployment, monitoring, compute, disaster recovery |
-| **Information Systems Agent** | Business processes, CRM/ERP integration, data flow, organizational impact |
-| **Actuarial / Risk Agent** | Financial and operational risk, expected losses, probability-based risk scenarios, cost-benefit |
+Routing
 
-A **Router Agent** decides which specialists a given question actually needs (e.g. an infrastructure question only goes to the IT agent, while a full feasibility question goes to all six). A **Supervisor Agent** dispatches tasks, collects results, detects conflicts, requests re-analysis when needed, and compiles the final report.
+The Router Agent examines the Enterprise Case and selects only the specialists that materially contribute. For example, a cloud deployment question may be routed to IT and Software Engineering, while a CRM integration case may require Information Systems and Software Engineering.
 
-## Key Capabilities
+Orchestrator–Worker
 
-- **Multi-agent routing** — questions are routed only to the relevant specialists (Track C: Router Across Sources)
-- **RAG per specialist** — each agent retrieves from its own domain knowledge base (AI, software engineering, IT, information systems, actuarial) using `HuggingFaceEmbeddings`, not fake embeddings
-- **Long-term memory** — the system remembers company, project, budget, users, and requirements across turns so follow-up questions don't need to repeat context
-- **Human-in-the-loop** — before a final report is issued, it passes through risk validation and requires human approval (`interrupt()` / `resume()`)
-- **Retry handling** — failed or incomplete agent/retrieval steps are detected and retried automatically
-- **LangSmith tracing** — full traces of the consultation (intake → routing → specialist calls → RAG lookups → supervisor → risk validation → human approval → final report) for debugging and evidence of the above patterns actually occurring
+The selected specialist agents operate as workers. Each worker analyzes the case from its own domain. The consultation stage coordinates their execution, while the Supervisor synthesizes their outputs into one consistent report.
 
-## Interface
+Human Evaluator–Optimizer Loop
 
-DEX includes a Gradio UI with the following tabs:
+The Supervisor produces a draft report that passes through human approval. The reviewer can approve it or request a revision. When revision is requested, the workflow returns to the Supervisor with the reviewer’s feedback.
 
-- **Consultation** — submit a new enterprise case
-- **Assessment Results** — view the specialist analyses and final decision
-- **Knowledge Base** — browse the domain sources each agent draws on
-- **Trace & Evidence** — inspect the LangSmith trace for a given run
-- **Follow-up Consultation** — ask follow-up questions using stored memory of the case
+Specialist Agents
 
-## Tech Stack
+|Agent                              |Responsibilities                                                                                                                                                     |
+|-----------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|**AI Specialist**                  |Model selection, RAG, fine-tuning, hallucinations, guardrails, evaluation, multilingual requirements, privacy boundaries, and human escalation                       |
+|**Software Engineering Specialist**|Requirements, architecture, APIs, testing, maintainability, scalability, integration, SDLC, and observability                                                        |
+|**Computer Science Specialist**    |Algorithms, retrieval, ranking, vector similarity, metadata filtering, reranking, optimization, complexity, latency, and evaluation                                  |
+|**IT Infrastructure Specialist**   |Cloud and on-premise infrastructure, compute, networking, storage, deployment, containers, monitoring, availability, backup, disaster recovery, and scaling          |
+|**Information Systems Specialist** |Business processes, CRM and ERP integration, information flow, data ownership, stakeholders, organizational impact, change management, governance, and business value|
+|**Enterprise Risk Specialist**     |Financial, operational, model, security, and implementation risks, uncertainty, scenario analysis, expected loss, and cost-benefit considerations                    |
 
-- LangGraph for multi-agent orchestration (routing, supervisor, HITL, retries)
-- HuggingFace embeddings for RAG
-- LangSmith for tracing and observability
-- Gradio for the UI
+Agent Responsibilities
 
-## Why Six Agents?
+Intake Agent
 
-Evaluating an enterprise AI system isn't a single-discipline problem. Each specialist agent analyzes a distinct dimension of feasibility, risk, and integration — technical (AI/CS/SE), operational (IT), organizational (IS), and financial (Actuarial) — so the final recommendation reflects the full picture rather than one narrow perspective.
+Converts the submitted description into a structured Enterprise Case. It extracts the company, industry, project, problem, requirements, budget, expected users, and additional context. It does not evaluate the project or select specialists.
+
+Router Agent
+
+Reviews the structured case, selects the relevant specialists, and records a routing reason. It is instructed not to select every specialist by default.
+
+Specialist Agents
+
+Each selected specialist:
+
+1. Receives the structured Enterprise Case.
+2. Retrieves relevant context from its own knowledge base.
+3. Analyzes the case from its assigned domain.
+4. Separates known facts from assumptions.
+5. Produces a specialist feasibility score.
+6. Returns its analysis and retrieved sources.
+
+Supervisor Agent
+
+Receives the case, routing information, completed specialist analyses, scores, retrieved evidence, and any human revision feedback. It identifies agreements, conflicts, risks, and implementation conditions before creating a unified report.
+
+The Supervisor does not determine the final numeric score or decision. Those values are calculated programmatically for consistency.
+
+Human Reviewer
+
+The report must be approved before finalization. The reviewer may approve the draft or return it to the Supervisor with revision feedback.
+
+Specialized RAG
+
+DEX uses an independent Retrieval-Augmented Generation knowledge base for each specialty:
+
+```text
+Knowledge Bases
+├── AI
+├── Software Engineering
+├── Computer Science
+├── IT Infrastructure
+├── Information Systems
+└── Enterprise Risk
+```
+
+Each specialist retrieves only from its own domain knowledge base. This reduces irrelevant retrieval and keeps every agent focused on its assigned specialty.
+
+RAG Process
+
+1. Documents are uploaded for a specialty.
+2. PDF, TXT, or Markdown documents are converted into text.
+3. Text is divided into overlapping chunks.
+4. Hugging Face embeddings are generated.
+5. Chunks are stored in a FAISS vector store.
+6. A retrieval query is created from the Enterprise Case.
+7. The most relevant chunks are retrieved.
+8. Context is passed to the selected specialist.
+9. Source names and page numbers are stored when available.
+
+DEX also includes small starter knowledge collections so the RAG workflow can be demonstrated before final reference documents are uploaded.
+
+Key Capabilities
+
+• Multi-agent routing (Track C — Router Across Sources) — a Router Agent classifies each Enterprise Case and routes it only to the relevant specialists and their corresponding domain knowledge bases.
+• Per-specialty RAG — uses separate FAISS stores and real Hugging Face embeddings.
+• Deterministic scoring — calculates the final score with Python using defined weights.
+• Thread-level memory — preserves case and workflow state during the same session using InMemorySaver.
+• Human-in-the-loop — uses interrupt() and Command(resume=...) for approval and revision.
+• Retry handling — retries failed retrieval and specialist operations.
+• Execution evidence — records routing, completion, sources, and retry attempts.
+• Optional LangSmith tracing — provides workflow observability when enabled.
+• Professional Gradio UI — supports submission, review, approval, follow-up, and report download.
+
+Scoring System
+
+Each specialist produces a score from 0 to 100.
+
+|Specialty           |Weight|
+|--------------------|-----:|
+|AI                  |20%   |
+|Software Engineering|20%   |
+|Computer Science    |10%   |
+|IT Infrastructure   |15%   |
+|Information Systems |15%   |
+|Enterprise Risk     |20%   |
+
+Only selected specialists with completed scores are included. Their weights are normalized when calculating the overall result.
+
+Decision Thresholds
+
+|Overall Score|Decision                   |
+|------------:|---------------------------|
+|80–100       |Recommended                |
+|65–79.99     |Recommended with Conditions|
+|50–64.99     |Requires Major Revision    |
+|Below 50     |Not Recommended            |
+
+Report Structure
+
+1. Executive Summary
+2. Project Understanding
+3. Specialist Findings
+4. Technical Feasibility
+5. AI Architecture
+6. Software Architecture
+7. IT Infrastructure
+8. Business Integration
+9. Risk Assessment
+10. Key Conditions
+11. Recommended Architecture
+12. Implementation Roadmap
+13. Overall Score
+14. Final Decision
+
+Interface
+
+DEX includes a Gradio interface with the following areas:
+
+• Consultation — submit a structured Enterprise Case.
+• Assessment Results — view scores, selected specialists, analyses, and the final decision.
+• Knowledge Base — upload and index references and inspect retrieval evidence.
+• Trace and Evidence — inspect routing, sources, scores, execution logs, and retry logs.
+• Follow-up Consultation — ask new questions using the case stored in the current session.
+
+Technology Stack
+
+• Python
+• LangChain
+• LangGraph
+• Groq API with Llama 3.3 70B
+• Hugging Face sentence-transformer embeddings
+• FAISS vector database
+• Gradio
+• LangSmith tracing (optional)
+• Google Colab
+
+Installation
+
+```bash
+pip install -U \
+    langchain \
+    langgraph \
+    langchain-groq \
+    langchain-community \
+    langchain-huggingface \
+    langchain-text-splitters \
+    sentence-transformers \
+    faiss-cpu \
+    pypdf \
+    gradio \
+    typing_extensions
+```
+
+API Configuration
+
+Add GROQ_API_KEY to Google Colab Secrets. The notebook retrieves it securely:
+
+```python
+import os
+from google.colab import userdata
+
+os.environ["GROQ_API_KEY"] = userdata.get("GROQ_API_KEY")
+```
+
+Do not store API keys directly in the notebook or commit them to GitHub.
+
+Optional LangSmith Configuration
+
+LangSmith tracing is disabled by default. To enable it:
+
+```python
+ENABLE_LANGSMITH = True
+```
+
+Then add LANGSMITH_API_KEY. The tracing project name is DEX-Enterprise-AI-Consultant.
+
+How to Run
+
+1. Open DEX.ipynb in Google Colab.
+2. Add GROQ_API_KEY to Colab Secrets.
+3. Run the notebook from top to bottom.
+4. Index the starter knowledge or upload reference documents.
+5. Launch the Gradio interface.
+6. Submit an Enterprise Case.
+7. Review the Router-selected specialists.
+8. Inspect the analyses and retrieved evidence.
+9. Review the calculated score and decision.
+10. Approve the report or request a revision.
+11. Ask a follow-up question using the same session.
+
+Demonstration Scenario
+
+> A Saudi FinTech company wants to build an AI-powered customer support platform. The platform will receive approximately 5,000 requests per day and serve around 100,000 customers. It must support Arabic and English, retrieve answers from internal policies, connect to the company CRM, protect customer data, operate 24/7, and escalate complex cases to human employees. The available budget is 500,000 SAR.
+
+During the demonstration:
+
+1. Submit the Enterprise Case.
+2. Show the specialists selected by the Router.
+3. Explain why every agent was not invoked.
+4. Show the retrieved knowledge sources.
+5. Review the specialist analyses.
+6. Show the programmatically calculated score and decision.
+7. Inspect the execution and retry logs.
+8. Request a revision at the approval stage.
+9. Review the updated report and approve it.
+10. Ask a follow-up question using the same session.
+
+Why Six Specialists?
+
+Enterprise AI feasibility is not a single-discipline problem. A project may be technically possible but operationally difficult, financially risky, poorly integrated with business processes, or unsuitable for the organization’s infrastructure.
+
+|Dimension                            |Specialist                     |
+|-------------------------------------|-------------------------------|
+|AI feasibility                       |AI Specialist                  |
+|Software delivery                    |Software Engineering Specialist|
+|Algorithms and performance           |Computer Science Specialist    |
+|Infrastructure and operations        |IT Infrastructure Specialist   |
+|Business integration                 |Information Systems Specialist |
+|Financial and operational uncertainty|Enterprise Risk Specialist     |
+
+Combining these perspectives produces a more balanced recommendation than relying on one general-purpose model.
+
+Current Limitations
+
+• Memory is session-based and is not permanently stored across independent sessions.
+• Specialist agents are not executed through true parallel LangGraph branches.
+• RAG quality depends on the quality and coverage of uploaded documents.
+• Starter knowledge is intended for demonstration and should be expanded with reliable references.
+• The system does not replace professional technical, security, legal, or financial review.
+• Scores are decision-support indicators and do not guarantee business outcomes.
+• Missing case information may require specialists to state assumptions.
+• LangSmith must be enabled before traces can be collected.
+
+Future Improvements
+
+• Persistent database-backed long-term memory
+• True parallel specialist execution
+• Automatic conflict detection
+• Targeted specialist re-analysis
+• Structured output validation
+• Hybrid semantic and keyword retrieval
+• Metadata filtering and reranking
+• Persistent vector storage
+• Authentication and role-based access
+• PDF and additional report exports
+• Cost and latency monitoring
+• Automated evaluation datasets
+• Production web deployment
+
+Disclaimer
+
+DEX is an academic decision-support prototype. Its AI-generated outputs may contain mistakes, incomplete assumptions, or inaccurate recommendations. All technical, financial, security, legal, and organizational decisions should be reviewed by qualified professionals before implementation.
+
+License
+
+This project was developed as an academic capstone project. Add the appropriate license before public distribution.
